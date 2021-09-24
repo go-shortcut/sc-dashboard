@@ -1,3 +1,6 @@
+# github.com/go-shortcut/go-shortcut-api v0.0.1
+## explicit
+github.com/go-shortcut/go-shortcut-api/pkg/shortcutclient
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 # github.com/google/go-github/v39 v39.1.0

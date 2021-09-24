@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-shortcut/go-shortcut-api/pkg/shortcutclient"
 	"github.com/google/go-github/v39/github"
 	"golang.org/x/oauth2"
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 )
 
 func main() {
@@ -26,7 +28,11 @@ func main() {
 		fmt.Println("GITHUB_OWNER_NAME environ is required")
 		os.Exit(1)
 	}
-
+	token := os.Getenv("SHORTCUT_API_TOKEN")
+	if token == "" {
+		fmt.Println("SHORTCUT_API_TOKEN environ is required")
+		os.Exit(1)
+	}
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubAccessToken})
 	tc := oauth2.NewClient(ctx, ts)
@@ -58,16 +64,41 @@ func main() {
 		}
 	}
 
-	fmt.Printf("# %d # %+v\n", len(scStoryIds), GetSliceOfStringKeysFromMap(scStoryIds))
+	storyIds := GetKeysAsInt64Slice(scStoryIds)
+	fmt.Printf("# %d # %d # %+v\n", len(scStoryIds), len(storyIds), storyIds)
+
+	GithubBranchName := "premaster2"
+
+	shortcutClient := shortcutclient.New(token)
+	//shortcutClient.HTTPClient.Timeout = 30 * time.Second
+	//shortcutClient.Debug = true
+	playload := shortcutclient.UpdateMultipleStoriesParams{
+		StoryIds: storyIds,
+		LabelsAdd: []shortcutclient.CreateLabelParams{
+			{Name: GithubBranchName, Color: "#0000FF"},
+		},
+	}
+
+	if GithubBranchName == "master" {
+		playload.LabelsRemove = []shortcutclient.CreateLabelParams{
+			{Name: "premaster2", Color: "#FF0000"},
+		}
+	}
+
+	shortcutClient.UpdateMultipleStories(playload)
 
 }
 
-func GetSliceOfStringKeysFromMap(m map[string]interface{}) []string {
-	keys := make([]string, len(m))
+func GetKeysAsInt64Slice(m map[string]interface{}) []int64 {
+	keys := make([]int64, len(m))
 
 	i := 0
 	for k := range m {
-		keys[i] = k
+		kInt64, e := strconv.ParseInt(k, 10, 64)
+		if e != nil {
+			continue
+		}
+		keys[i] = kInt64
 		i++
 	}
 	return keys
