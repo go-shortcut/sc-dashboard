@@ -85,7 +85,10 @@ func main() {
 		}
 	}
 
-	shortcutClient.UpdateMultipleStories(playload)
+	if _, err = shortcutClient.UpdateMultipleStories(playload); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 }
 
