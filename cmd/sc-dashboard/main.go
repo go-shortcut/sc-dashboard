@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+const (
+	EnvKeyGithubBaseRef = "GITHUB_BASE_REF"
+	EnvKeyGithubHeadRef = "GITHUB_HEAD_REF"
+)
+
 func main() {
 	githubAccessToken := os.Getenv("GITHUB_ACCESS_TOKEN")
 	if githubAccessToken == "" {
@@ -41,11 +46,10 @@ func main() {
 		githubOwnerName, githubRepoName = splitedGithubRepository[0], splitedGithubRepository[1]
 	}
 
-	GithubBaseRef := os.Getenv("GITHUB_BASE_REF")
-	GithubHeadRef := os.Getenv("GITHUB_HEAD_REF")
+	GithubBaseRef := os.Getenv(EnvKeyGithubBaseRef)
+	GithubHeadRef := os.Getenv(EnvKeyGithubHeadRef)
 	if len(GithubBaseRef)*len(GithubHeadRef) == 0 {
-		// GITHUB_BASE_REF=refs/heads/master GITHUB_HEAD_REF=refs/heads/premaster2
-		fmt.Printf("Bad ref variables: GITHUB_BASE_REF=%s, GITHUB_HEAD_REF=%s.\n", GithubBaseRef, GithubHeadRef)
+		fmt.Printf("Bad ref variables: %s=%s, %s=%s.\n", EnvKeyGithubBaseRef, GithubBaseRef, EnvKeyGithubHeadRef, GithubHeadRef)
 		os.Exit(1)
 
 	}
@@ -69,10 +73,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	if len(comp.Commits) == 0 {
+		fmt.Printf("No commits found between %s and %s.\n", GithubBaseRef, GithubHeadRef)
+		os.Exit(0)
+	}
+	fmt.Printf("Found %+v commits.\n", len(comp.Commits))
 
 	var allChangeMessages string
 	for _, c := range comp.Commits {
-		allChangeMessages += *c.Commit.Message
+		allChangeMessages += *(c.Commit.Message)
 	}
 
 	scStoryIds := make(map[string]interface{})
@@ -90,10 +99,13 @@ func main() {
 			scStoryIds[i[1]] = nil
 		}
 	}
+	if len(scStoryIds) == 0 {
+		fmt.Println("No story ids found")
+		os.Exit(0)
+	}
 
 	storyIds := GetKeysAsInt64Slice(scStoryIds)
-	fmt.Printf("# %d # %d # %+v\n", len(scStoryIds), len(storyIds), storyIds)
-	//os.Exit(1)
+	fmt.Printf("Found story ids: %+v", scStoryIds)
 
 	shortcutClient := shortcutclient.New(token)
 	//shortcutClient.HTTPClient.Timeout = 30 * time.Second

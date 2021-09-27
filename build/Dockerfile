@@ -8,5 +8,6 @@ RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o /app cmd
 FROM scratch
 COPY --from=build-base /app /app
 COPY --from=build-base /tmp/passwd /etc/passwd
+COPY --from=build-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 USER nobody
 ENTRYPOINT ["/app"]
