@@ -68,6 +68,10 @@ func main() {
 	client := github.NewClient(tc)
 
 	prCommit, _, err := client.Repositories.GetCommit(ctx, githubOwnerName, githubRepoName, GithubSHA, nil)
+	if prCommit == nil {
+		fmt.Printf("Commit not found: %s.\n", GithubSHA)
+		os.Exit(1)
+	}
 	if len(prCommit.Parents) != 2 {
 		fmt.Printf("Expected 2 parents, got %v.\n", len(prCommit.Parents))
 		os.Exit(1)
@@ -110,7 +114,7 @@ func main() {
 	}
 
 	storyIds := GetKeysAsInt64Slice(scStoryIds)
-	fmt.Printf("Found story ids: %+v", scStoryIds)
+	fmt.Printf("Found story ids: %+v", storyIds)
 
 	shortcutClient := shortcutclient.New(token)
 	//shortcutClient.HTTPClient.Timeout = 30 * time.Second
@@ -130,11 +134,19 @@ func main() {
 		}
 	}
 
-	if _, err = shortcutClient.UpdateMultipleStories(playload); err != nil {
+	if updatedStroies, err := shortcutClient.UpdateMultipleStories(playload); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
-	}
+	} else {
+		countStories := len(updatedStroies)
+		storyIDs := make([]int64, countStories)
 
+		for i, s := range updatedStroies {
+			storyIDs[i] = s.ID
+		}
+		fmt.Printf("updated %v stories: %v", countStories, storyIDs)
+
+	}
 }
 
 func GetKeysAsInt64Slice(m map[string]interface{}) []int64 {
