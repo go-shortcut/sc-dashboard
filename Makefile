@@ -1,4 +1,4 @@
-.PHONY: all vendor release
+.PHONY: all vendor build
 
 all: build
 
