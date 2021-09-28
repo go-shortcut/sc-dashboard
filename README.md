@@ -1,6 +1,6 @@
 # shortcut-story-marker
 
-adds tags to Shortcut stories related to the release branch
+adds Labels to Shortcut stories related to the release branch
 
 # build
 
