@@ -17,7 +17,6 @@ import (
 const (
 	// Default environment variables
 	// https://docs.github.com/en/actions/learn-github-actions/environment-variables
-	envKeyGithubSHA        = "GITHUB_SHA"
 	envKeyGithubRepository = "GITHUB_REPOSITORY"
 
 	// Secrets
@@ -61,13 +60,6 @@ func main() {
 		githubOwnerName, githubRepoName = splitGithubRepository[0], splitGithubRepository[1]
 	}
 
-	githubSHA := os.Getenv(envKeyGithubSHA)
-	if len(githubSHA) == 0 {
-		fmt.Printf("Bad ref variables: %s=%s.\n", envKeyGithubSHA, githubSHA)
-		os.Exit(1)
-
-	}
-
 	shortcutAddLabel := os.Getenv(envKeyShortcutAddLabel)
 	shortcutDelLabel := os.Getenv(envKeyShortcutDelLabel)
 	if len(shortcutAddLabel)+len(shortcutDelLabel) == 0 {
@@ -76,23 +68,28 @@ func main() {
 
 	}
 
+	githubPullNumber := os.Getenv(envKeyPullNumber)
+	pNum, e := strconv.Atoi(githubPullNumber)
+	if e != nil {
+		fmt.Printf("%s=%s is not int64.\n", envKeyPullNumber, githubPullNumber)
+		os.Exit(1)
+	}
+
 	// all env variables are checked, let's go
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubAccessToken})
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
-	prCommit, _, err := client.Repositories.GetCommit(ctx, githubOwnerName, githubRepoName, githubSHA, nil)
-	if prCommit == nil {
-		fmt.Printf("Commit not found: %s.\n", githubSHA)
+	//browserOpts := github.ListOptions{PerPage: 100}
+	curPR, _, err := client.PullRequests.Get(ctx, githubOwnerName, githubRepoName, pNum)
+	if err != nil {
+		fmt.Printf("Pull request not found: %d.\n", pNum)
 		os.Exit(1)
 	}
-	if len(prCommit.Parents) != 2 {
-		fmt.Printf("Expected 2 parents, got %v.\n", len(prCommit.Parents))
-		os.Exit(1)
-	}
-	GithubBaseRef := *(prCommit.Parents[0].SHA)
-	GithubHeadRef := *(prCommit.Parents[1].SHA)
+
+	GithubBaseRef := *(curPR.Base.Ref)
+	GithubHeadRef := *(curPR.Head.Ref)
 	comp, _, err := client.Repositories.CompareCommits(ctx, githubOwnerName, githubRepoName, GithubBaseRef, GithubHeadRef, nil)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -165,13 +162,6 @@ func main() {
 	}
 	fmt.Printf("updated %v stories: %v.\n", countStories, storyIDs)
 
-	githubPullNumber := os.Getenv(envKeyPullNumber)
-	pNum, e := strconv.Atoi(githubPullNumber)
-	if e != nil {
-		fmt.Printf("%s=%s is not int64.\n", envKeyPullNumber, githubPullNumber)
-		os.Exit(1)
-	}
-
 	scEpics, err := shortcutClient.ListEpics()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -189,7 +179,6 @@ func main() {
 		body += scEpicTitle[epicId] + "\n" + urls + "\n\n"
 	}
 
-	//_, _, err = client.PullRequests.CreateComment(ctx, githubOwnerName, githubRepoName, pNum,
 	_, _, err = client.Issues.CreateComment(ctx, githubOwnerName, githubRepoName, pNum,
 		&github.IssueComment{Body: &body},
 	)

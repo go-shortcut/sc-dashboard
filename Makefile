@@ -17,4 +17,5 @@ fmt:
 run:
 	go run cmd/app/*.go
 
-
+run_branches:
+	go run cmd/branches/*.go
