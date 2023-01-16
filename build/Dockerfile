@@ -8,6 +8,7 @@ ADD . .
 RUN go build -a -o /app cmd/app/*.go
 
 FROM scratch
+LABEL org.opencontainers.image.source https://github.com/go-shortcut/shortcut-story-marker
 COPY --chown=65534:65534 --from=build-base /tmp/empty-dir-owned-by-nobody /tmp
 COPY --from=build-base /tmp/passwd /etc/passwd
 COPY --from=build-base /tmp/passwd /etc/passwd
