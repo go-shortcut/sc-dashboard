@@ -5,7 +5,7 @@ adds Labels to Shortcut stories related to the release branch
 # build
 
 ```shell
-TAGVER=v0.0.4
+TAGVER=v0.0.5
 DOCKERID=ghcr.io
 OWNER=go-shortcut
 echo $GITHUB_ACCESS_TOKEN | docker login ghcr.io -u $OWNER --password-stdin
