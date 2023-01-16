@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-shortcut/go-shortcut-api/pkg/shortcutclient"
-	"github.com/google/go-github/v39/github"
+	"github.com/google/go-github/v49/github"
 	"golang.org/x/oauth2"
 	"log"
 	"os"
@@ -30,6 +30,7 @@ const (
 	// user defined
 	envKeyShortcutAddLabel = "SHORTCUT_ADD_LABEL"
 	envKeyShortcutDelLabel = "SHORTCUT_DEL_LABEL"
+	statusCode422          = "status code 422"
 )
 
 func main() {
@@ -149,7 +150,25 @@ func main() {
 	updatedStroies, err := shortcutClient.UpdateMultipleStories(playload)
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(1)
+		if err.Error() == statusCode422 {
+			// bad story_id case
+			for _, i := range storyIds {
+				playload.StoryIds = []int64{i}
+				story, err := shortcutClient.UpdateMultipleStories(playload)
+				if err != nil {
+					if err.Error() == statusCode422 {
+						// here is bad story_id
+						fmt.Printf("Story: %v, %s\n", i, err.Error())
+						continue
+					}
+					os.Exit(1)
+				}
+				updatedStroies = append(updatedStroies, story[0])
+			}
+
+		} else {
+			os.Exit(1)
+		}
 	}
 	countStories := len(updatedStroies)
 	storyIDs := make([]int64, countStories)
